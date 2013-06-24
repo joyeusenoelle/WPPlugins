@@ -1,0 +1,250 @@
+Wedding RSVP plugin
+ 
+DB Structure
+ 
+Table Group
+                Column:
+                                ID
+                Type:    
+                                INT
+                Nullable:
+                                No
+                Additional
+                                AutoIncrement
+ 
+                Column:
+                                Attending
+                Type:    
+                                BIT
+                Nullable:
+                                Yes
+                Default
+                                Null
+ 
+                Column
+                                MaxGuests
+                Type
+                                Int
+                Nullable
+                                No
+                Default
+                                1
+               
+ 
+Table Guest
+                Column
+                                ID
+                Type
+                                INT
+                Nullable
+                                No
+                Additional
+                                AutoIncrement
+ 
+                Column
+                                Name
+                Type
+                                VarChar(100)
+                Nullable
+                                No
+ 
+                Column
+                                DietaryRestrictions
+                Type
+                                Varchar(max)
+                Nullable
+                                Yes
+ 
+Table Meal
+                Column
+                                ID
+                Type
+                                INT
+                Nullable
+                                No
+                Additional
+                                AutoIncrement
+ 
+                Column
+                                Name
+                Type
+                                Varchar(50)
+                Nullable
+                                No
+                Column
+                                Description
+                Type
+                                Varchar(max)
+                Nullable
+                                Yes
+ 
+Table GuestGroup
+                Column
+                                ID
+                Type
+                                INT
+                Nullable
+                                No
+                Additional
+                                AutoIncrement
+               
+                Column
+                                GroupID
+                Type
+                                Int
+                Nullable
+                                No
+                Foreign Key
+                                Table Group ID
+ 
+                Column
+                                GuestID
+                Type
+                                Int
+                Nullable
+                                No
+                Foreign Key
+                                Table Guest ID
+ 
+Table GuestMeal
+                Column
+                                ID
+                Type
+                                INT
+                Nullable
+                                No
+                Additional
+                                AutoIncrement
+               
+                Column
+                                MealID
+                Type
+                                Int
+                Nullable
+                                No
+                Foreign Key
+                                Table Meal ID
+ 
+                Column
+                                GuestID
+                Type
+                                Int
+                Nullable
+                                No
+                Foreign Key
+                                Table Guest ID 
+ 
+               
+ 
+Groups table is set up behind the scenes in the DB
+Guests table is set up behind the scenes in the DB
+Meals table is set up behind the scenes in the DB
+GuestGroup table is set up behind the scenes in the DB
+ 
+ 
+A guest group will always contain at least 1 person and allow a max of MaxGuests
+ 
+ 
+Process:
+ 
+1. Prompt for last name
+2. Present list of all guests with that last name
+                i.e. search for:
+                                                Oberg,
+                                Return:
+                                                Oberg, Michael
+                                                Oberg, Jeff
+                                                Oberg, Gregory
+                                                ...etc
+                                                with radio buttons, one selection max
+ 
+3. Check for a selection, then allow to proceed to next page
+ 
+                Show all members in the group attached to that person
+                Ask that group is attending, yes/no
+ 
+                If no,
+                                Display summary page with message like
+                                                Thank you for responding, you presence will be missed, blah blah blah.
+                                update database w/ response for that guest group
+                                After X seconds, redirect to home page
+                If yes,
+                                Display all members of party in list
+                                For each member, have a "change guest name" option,
+                                                ex: Invite Bob and Rita, Rita can't attend, so allow change to name to Chris.
+                                                When changed, update name for that ID in the database
+                                For each member, have a "Remove Guest" option
+                                                ex: Invite Bob and Rita, Rita can't attend and Bob has no other friends.
+                                                Remove connection from group to guest table
+                                If a group guest number is less than MaxGuests for that group, display button for "Add another Guest"
+                                                Modal popup for guest name, insert guest into database with new ID, connect that guest ID to group ID
+                                For each member, button for 'select meal' with modal popup displaying the food options with name and description as radio buttons.
+                                For each member, have a box for entering dietary restrictions
+                               
+                                Proceed Button
+                               
+                                Next page, summary screen of all guests in that group, with all meals they want, and all dietary restrictions for each member
+ 
+                                Confirm Button
+ 
+                                Update database with Meal to Guest ID connection
+                                Update database with all dietary restriction for each guest ID
+                                isplay summary page with message like
+                                                Thank you for responding, we look forward to seeing you there, blah blah blah.
+                                After X seconds, redirect to home page
+								
+-----
+
+
+Thanks, Adam. Is this all that they intend to use the site for? It might be easier to simply set up a bespoke data/code base for this project if they don't want the blogging/paging functionality of WordPress. It's easy enough to do this as a WP plugin, but probably just as easy to do it as a standalone project.
+
+Also, I just want to make sure that we're all on the same page. (I'm sorry that you're go-betweening on this; feel free to forward this to the happy couple or to send them my email address so we can communicate directly.)
+
+It looks like the intended structure is as follows:
+
+* Each guest has a unique entry in the GUEST table. The table will be pre-populated.
+* Guests are divided into groups in the GROUP table based on invitation. (If Bob and Rita are invited as part of the same invitation, they are considered a group.) This table is also pre-populated.
+* When a guest goes to the website, they enter their last name and then select their name from a list of matches.
+* Guests can RSVP yes or no for their entire group. (It needs to be explicit here that if any member of the group can attend, the group should RSVP yes and then manipulate its membership on the next page.) If they RSVP no, they are given a "regret" message and sent to the home page. If they RSVP yes...
+* Guests can verify that their group is correct, change a group member, or remove a group member entirely. If the group is not full, guests can add additional guests to the group.
+* Guests can select a meal choice (selected from the MEAL table) and enter dietary restrictions. (Selected meal is stored in the GUESTMEAL table; dietary restrictions are stored in the GUEST table.)
+* Once the group is verified, and meals and restrictions have been entered, guests are shown a summary of what they have selected and given the "thanks" message. If they click CONFIRM, the data is written to the respective tables.
+
+Some issues that I see:
+
+* I don't think this is the best way to arrange the data in a MySQL environment. I would structure the tables like this:
+
+Table GROUP
+    id (Group ID)
+    attending (RSVP yes/no)
+    maxguests ("slots" in the group)
+
+Table GUESTS
+    id (Guest ID)
+    givname (Given name) - see below
+    famname (Family name) - see below
+    meal (Meal selection)
+    dietary (Dietary restrictions)
+    group (Group ID, keyed to GROUP.id)
+
+This significantly reduces the data footprint and makes it much easier to interact with the database.
+
+* If a spelling error has been made in the database, a search for the guest's last name may not bring their name up, and they will be unable to proceed. It's better to separate the NAME field into "Given Name" and "Family Name", and have the guest select each from a drop-down list, populated from the GUEST table.
+* On the group-manipulation page, there needs to be a check against the GUEST table to make sure that nobody is accidentally added twice. (For instance, Bob, Rita, and Chris are all invited, in two groups, [Bob,Rita] and [Chris]. Rita can't go, but Chris says she'll go together with Bob. Bob adds Chris to his group, but she's already in the database and part of her own group; if she's already RSVPed she may appear to be attending twice.)
+* Under the existing structure, it's possible for someone to get to the summary screen, see that all their changes are the way they want them, and close the window without pressing the CONFIRM button, which would discard the changes they've just made. It's probably better to make the changes as the individual pages are submitted, populate the summary from the tables, then allow the guest to return to a particular page if there's an error on that page.
+* SECURITY: What prevents a random person from wandering across the site and wreaking havoc on the RSVPs? (Have the invitations been sent out yet? If not, consider sending each group a unique password.)
+
+
+-----
+
+They're hoping to stick with Wordpress just so they can do a few separate pages related to the wedding – things like "what's in the area", directions, that sort of thing. Wordpress seems like the best option to handle all that, plus easy themeing and all.
+ 
+The actual structure of the database doesn't really matter, but he'd like some sort of simple form to edit individual records – even something like throwing the data into a jquery table/etc would probably work. They do need to be able to add more guests at a later date too – apparently they'll be doing invites in waves until they cap out at their max (75, I think, not sure)
+ 
+They'd prefer to stick with search rather than dropboxes. I'm not really sure why. Part of this is being driven by the fiancé who's very particular about how she wants it to work. *shrug*
+ 
+Doing verification for double-invites isn't going to be an issue. Similarly, they're not concerned about security. Guess it makes your job a bit easier, if nothing else.
+ 
+"Under the existing structure, it's possible for someone to get to the summary screen, see that all their changes are the way they want them, and close the window without pressing the CONFIRM button, which would discard the changes they've just made. It's probably better to make the changes as the individual pages are submitted, populate the summary from the tables, then allow the guest to return to a particular page if there's an error on that page."
+ 
+I agree that this makes a lot more sense, but they (primarily the fiancé) apparently want to treat the whole thing as a process rather than break it down into sub-steps. Again, not sure why. I think it might have to do with older family members and trying to make it as bare-bones simple as they can. I'd think a dropbox would aid that and said as much, but…yeah. Got shot down on that.
