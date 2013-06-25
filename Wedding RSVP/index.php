@@ -11,7 +11,7 @@
 include_once("classes/output_classes.php");
 include_once("adminpages.php");
 include_once("actionpages.php");
-include("functions.php");
+include_once("functions.php");
 $WRSVP_db_version = "1.0.0";
 
 function WRSVP_activate() {
@@ -23,7 +23,7 @@ function WRSVP_activate() {
 		familyname TEXT,
 		meal INT(3),
 		dietary TEXT,
-		group INT(11),
+		grp INT(11),
 		UNIQUE KEY id (id)
 	);";
 	$sql2 = "CREATE TABLE wrsvp_groups (

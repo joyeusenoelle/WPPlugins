@@ -1,12 +1,35 @@
 <?
 
-include_once("classes/output_classes.php");
+require_once("header.php");
 require_once("functions.php");
 
-$options = get_option('wrsvp_opts');	// Options from the settings page
+//$options = get_option('wrsvp_opts');	// Options from the settings page
 
 if($_POST) {
-	if($_POST['getGroup']) {
+	if(isset($_POST['getNames'])) {
+		if($_POST['getNames'] == "") {
+			die("{\"warning\":\"You must type your name in the input box.\"}");
+		} else {
+			$sql = "SELECT * FROM wrsvp_guests WHERE familyname LIKE '%" . $_POST['getNames'] . "%'";
+			$results = $wpdb->get_results($sql);
+			if($results === NULL) {
+				die("{\"warning\":\"No names found matching " . $_POST['getNames'] . ".\"}");
+			}
+			$ret = "{\"names\":[";
+			$i = 0;
+			foreach($results as $result) {
+				if($i == 0) { $i = 1; } else { $ret .= ","; }
+				$ret .= "{";
+				$ret .= "\"gname\":\"" . $result->givenname . "\",";
+				$ret .= "\"fname\":\"" . $result->familyname . "\",";
+				$ret .= "\"id\":\"" . $result->id . "\",";
+				$ret .= "\"group\":\"" . $result->grp . "\"";
+				$ret .= "}";
+			}
+			$ret .= "]}";
+			echo $ret;
+		}
+	}elseif(isset($_POST['getGroup'])) {
 		if($_POST['getGroup'] == "" || intval($_POST['getGroup'] == 0)) {
 			die("{\"error\":\"No group submitted.\"}");
 		}
@@ -29,7 +52,7 @@ if($_POST) {
 		\****************************************************************/
 		
 		$sqlgroup = "SELECT maxguests FROM wrsvp_groups WHERE id='{$group}'";
-		$sqlguests = "SELECT * FROM wrsvp_guests WHERE group='{$group}'";
+		$sqlguests = "SELECT * FROM wrsvp_guests WHERE grp='{$group}'";
 		$maxguests = $wpdb->get_var($sqlgroup);
 		$guests = $wpdb->get_results($sqlguests);
 		$ret = "{";
@@ -49,15 +72,16 @@ if($_POST) {
 			$ret .= "\"diet\":\"" . $guest->dietary . "\"";
 			$ret .= "}";
 		}
-		$ret .= "],\"groupmax\":\"{$maxguests}\"";
+		$ret .= "],\"group\":\"{$group}\",\"groupmax\":\"{$maxguests}\"";
 		$ret .= "}";
 		echo $ret;
 			
-	} elseif($_POST['putGroup']) {
+	} elseif(isset($_POST['putGroup'])) {
 		if($_POST['putGroup'] == "") {
 			die("{\"error\":\"No updates submitted.\"}");
 		}
 		$post = $_POST['putGroup'];
+		$post = str_replace("\\\"","\"",$post);
 		// We're on screen 4.
 		/*************************** SCREEN 4 ***************************\
 		|*	Screen 4 is the final screen, shown after users have 		*|
@@ -88,8 +112,8 @@ if($_POST) {
 			}
 			if($guests[$i]['id'] != 0) {
 				$sql = "UPDATE wrsvp_guests SET givenname='" . $guests[$i]['gname'] . "', familyname='" . $guests[$i]['fname'] . "', meal='" . $guests[$i]['meal'] . "', dietary='" . $guests[$i]['diet'] . "' WHERE id='" . $guests[$i]['id'] . "'";
-			} else {
-				$sql = "INSERT INTO wrsvp_guests (givenname,familyname,meal,dietary) VALUES ('" . $guests[$i]['gname'] . "','" . $guests[$i]['fname'] . "','" . $guests[$i]['meal'] . "','" . $guests[$i]['diet'] . "')";
+			} elseif($guests[$i]['fname'] != "" && $guests[$i]['gname'] != "") {
+				$sql = "INSERT INTO wrsvp_guests (givenname,familyname,meal,dietary,grp) VALUES ('" . $guests[$i]['gname'] . "','" . $guests[$i]['fname'] . "','" . $guests[$i]['meal'] . "','" . $guests[$i]['diet'] . "','" . $guests[$i]['group'] . "')";
 			}
 			$results[$i] = $wpdb->query($sql);
 			if($results[$i] === FALSE) {
