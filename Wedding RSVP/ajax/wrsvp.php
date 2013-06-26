@@ -10,7 +10,7 @@ if($_POST) {
 		if($_POST['getNames'] == "") {
 			die("{\"warning\":\"You must type your name in the input box.\"}");
 		} else {
-			$sql = "SELECT * FROM wrsvp_guests WHERE familyname LIKE '%" . $_POST['getNames'] . "%'";
+			$sql = "SELECT * FROM wrsvp_guests WHERE familyname LIKE '%" . $wpdb->escape($_POST['getNames']) . "%'";
 			$results = $wpdb->get_results($sql);
 			if($results === NULL) {
 				die("{\"warning\":\"No names found matching " . $_POST['getNames'] . ".\"}");
@@ -51,8 +51,8 @@ if($_POST) {
 		|*		* Group ID: POST['getGroup'] from Screen 1				*|
 		\****************************************************************/
 		
-		$sqlgroup = "SELECT maxguests FROM wrsvp_groups WHERE id='{$group}'";
-		$sqlguests = "SELECT * FROM wrsvp_guests WHERE grp='{$group}'";
+		$sqlgroup = $wpdb->escape("SELECT maxguests FROM wrsvp_groups WHERE id='{$group}'");
+		$sqlguests = $wpdb->escape("SELECT * FROM wrsvp_guests WHERE grp='{$group}'");
 		$maxguests = $wpdb->get_var($sqlgroup);
 		$guests = $wpdb->get_results($sqlguests);
 		$ret = "{";
@@ -102,6 +102,7 @@ if($_POST) {
 		$guests = array();
 		$results = array();
 		$error = false;
+		$group = "";
 		for($i=0;$i<sizeof($pguests);$i++) {
 			$pguest = trim($pguests[$i],"{}");
 			$pguest = preg_replace("/\"/","",$pguest);
@@ -109,17 +110,22 @@ if($_POST) {
 			for($j=0;$j<sizeof($pguesta);$j++) {
 				list($key,$value) = explode(":",$pguesta[$j]);
 				$guests[$i][$key] = $value;
+				if($key == "group" && $group == "") {
+					$group = $value;
+				}
 			}
 			if($guests[$i]['id'] != 0) {
 				$sql = "UPDATE wrsvp_guests SET givenname='" . $guests[$i]['gname'] . "', familyname='" . $guests[$i]['fname'] . "', meal='" . $guests[$i]['meal'] . "', dietary='" . $guests[$i]['diet'] . "' WHERE id='" . $guests[$i]['id'] . "'";
 			} elseif($guests[$i]['fname'] != "" && $guests[$i]['gname'] != "") {
 				$sql = "INSERT INTO wrsvp_guests (givenname,familyname,meal,dietary,grp) VALUES ('" . $guests[$i]['gname'] . "','" . $guests[$i]['fname'] . "','" . $guests[$i]['meal'] . "','" . $guests[$i]['diet'] . "','" . $guests[$i]['group'] . "')";
 			}
+			$sql = $wpdb->escape($sql);
 			$results[$i] = $wpdb->query($sql);
 			if($results[$i] === FALSE) {
 				$error = true;
 			}
 		}
+		$wpdb->query($wpdb->escape("UPDATE wrsvp_groups SET attending=1 WHERE id='{$group}'"));
 		// Now we should have a multidimensional array called $guests with [n]["id"],[n]["gname"],[n]["fname"],[n]["meal"],[n]["diet"]
 		// We should also have an array called $results with the number of rows affected for each query; it should be 1 or FALSE.
 		// Not that we need to do anything with them, but they might be useful for further revisions.
@@ -128,6 +134,14 @@ if($_POST) {
 			echo "{\"success\":\"Data stored successfully.\"}";
 		} else {
 			echo "{\"error\":\"There was at least one error adding the data to the database.\"}";
+		}
+	} elseif(isset($_POST['regGroup'])) {
+		$group = $wpdb->escape($_POST['regGroup']);
+		$result = $wpdb->query("UPDATE wrsvp_groups SET attending=0 WHERE id='{$group}'");
+		if($result === FALSE) {
+			echo "{\"error\":\"Could not update database.\"}";
+		} else {
+			echo "{\"success\":\"Database successfully updated.\"}";	
 		}
 	}
 }

@@ -31,8 +31,10 @@ function setMeal(id,theval) {
 	$wj(mealsdiv).hide();
 	if(theval == -1) {
 		$wj(mealsdiv).closest("td").children("a").html("No meal");
+		$wj('#wrsvp-mealitem-' + i + '-x').attr("checked","checked");
 	} else {
 		$wj(mealsdiv).closest("td").children("a").html(armeals[theval]);
+		$wj('#wrsvp-mealitem-'+i+'-'+theval).attr("checked","checked");
 	}
 	$wj(mealscur).val(theval);
 }
@@ -102,13 +104,13 @@ function AJAXGetGroup(data) {
 				mainbox += "<tr><td><input type='hidden' name='wrsvp-id-" + i + "' id='wrsvp-id-" + i + "' value='" + gid + "'><input type='hidden' name-'wrsvp-group-" + i + "' id='wrsvp-group-" + i + "' value='" + group + "'><input type='text' name='wrsvp-gname-" + i + "' id='wrsvp-gname-" + i + "' size='30' value='" + gname + "'></td><td><input type='text' name='wrsvp-fname-" + i + "' id='wrsvp-fname-" + i + "' size='30' value='" + fname + "'></td><td><input type='hidden' id='wrsvp-curmeal-" + i + "' value='" + meal + "'><a href='' onClick='return getMeals(" + i + ");'>Select meal</a><div class='wrsvp-meals' id='wrsvp-meals-" + i + "' style='display: none;'><p><strong>Select a meal option:</strong></p>";
 				
 				var mealbox = "";
-				mealbox += "<input type='radio' value='-1' name='wrsvp-mealitem' id='wrsvp-mealitem-x'";
-				if(meal == "-1") {
+				mealbox += "<input type='radio' value='-1' name='wrsvp-mealitem-" + i + "' id='wrsvp-mealitem-" + i + "-x'";
+				if(meal == -1) {
 					mealbox +=" CHECKED";
 				}
 				mealbox += " onClick='setMeal(" + i + ",-1);'> No meal<br>";
 				for(var j=0;j<armeals.length;j++) {
-					mealbox += "<input type='radio' value='" + j + "' name='wrsvp-mealitem' id='wrsvp-mealitem-" + j + "'";
+					mealbox += "<input type='radio' value='" + j + "' name='wrsvp-mealitem" + i + "' id='wrsvp-mealitem-" + i + "-" + j + "'";
 					if(meal == j) {
 						mealbox += " CHECKED";
 					}
@@ -174,21 +176,42 @@ function AJAXConfirmGroup(data) {
 
 function AJAXPutGroup(data) {
 	if(data) {
-		alert(data);
+		//alert(data);
 		var output = JSON.parse(data);
 		if(output.error) {
 			prompt("Please copy the text in this text box and email it to " + contact + " .","There has been an error on " + wsiteurl + "! In the Wedding RSVP plugin, in the AJAXPutGroup function, an error was returned: " + output.error);
 		} else if(output.success) {
-			alert(output.success);
+			//alert(output.success);
 			// groupinfo needs id, gname, fname, meal, diet
-			//$wj('#wrsvp-info').html("<h2>" + msgconfirm + "</h2>"); // Disable for testing
+			$wj('#wrsvp-info').html("<h2>" + msgconfirm + "</h2>"); // Disable for testing
 			//$wj('#wrsvp-info').html("<h2>Data successfully stored!</h2>"); // Disable for live
-			//$wj('#wrsvp-main').html("");
+			$wj('#wrsvp-main').html("");
 		} else {
 			prompt("Please copy the text in this text box and email it to " + contact + " .","There has been an error on " + wsiteurl + "! In the Wedding RSVP plugin, in the AJAXPutGroup function, no recognizable output was returned: " + output);			
 		}
 	} else {
 		prompt("Please copy the text in this text box and email it to " + contact + " .","There has been an error on " + wsiteurl + "! In the Wedding RSVP plugin, in the AJAXPutGroup function, no data was returned.");
+	}
+	
+}
+
+function AJAXRegGroup(data) {
+	if(data) {
+		//alert(data);
+		var output = JSON.parse(data);
+		if(output.error) {
+			prompt("Please copy the text in this text box and email it to " + contact + " .","There has been an error on " + wsiteurl + "! In the Wedding RSVP plugin, in the AJAXRegGroup function, an error was returned: " + output.error);
+		} else if(output.success) {
+			//alert(output.success);
+			// groupinfo needs id, gname, fname, meal, diet
+			//$wj('#wrsvp-info').html("<h2>" + msgconfirm + "</h2>"); // Disable for testing
+			//$wj('#wrsvp-info').html("<h2>Data successfully stored!</h2>"); // Disable for live
+			//$wj('#wrsvp-main').html("");
+		} else {
+			prompt("Please copy the text in this text box and email it to " + contact + " .","There has been an error on " + wsiteurl + "! In the Wedding RSVP plugin, in the AJAXRegGroup function, no recognizable output was returned: " + output);			
+		}
+	} else {
+		prompt("Please copy the text in this text box and email it to " + contact + " .","There has been an error on " + wsiteurl + "! In the Wedding RSVP plugin, in the AJAXRegGroup function, no data was returned.");
 	}
 	
 }
@@ -212,6 +235,11 @@ function getGroup(group) {
 function putGroup(passval) {
 	var ajaxstr = "putGroup=" + passval;
 	$wj.post(wajaxurl,ajaxstr,function(data){AJAXPutGroup(data);});
+}
+
+function regGroup(group) {
+	var ajaxstr = "regGroup=" + group;
+	$wj.post(wajaxurl,ajaxstr,function(data){AJAXRegGroup(data);});
 }
 
 /* Display Manipulation Functions */
@@ -268,6 +296,7 @@ function ScreenFour() {
 function ScreenFive(group) {
 	$wj('#wrsvp-info').html("<h2>" + msgregret + "</h2>");
 	$wj('#wrsvp-main').html("");
+	regGroup(group);
 }
 
 function ScreenTwoAgain() {

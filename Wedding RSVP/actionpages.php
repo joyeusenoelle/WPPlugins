@@ -10,11 +10,12 @@ function WRSVP_page_body() {
 	var msgwelcome = \"" . $options['wrsvp_welcome'] . "\";
 	var msgregret = \"" . $options['wrsvp_regret'] . "\";
 	var msgconfirm = \"" . $options['wrsvp_confirm'] . "\";
-	var contact = \"" . $options['contact'] . "\";
-	var meals = \"" . $options['meals'] . "\";
+	var contact = \"" . $options['wrsvp_contact'] . "\";
+	var meals = \"" . $options['wrsvp_meals'] . "\";
 </script>";
 
 	echo "<script type=\"text/javascript\" src=\"" . plugins_url("js/wrsvp.js",__FILE__) . "\"></script>";
+	echo "<link rel=\"stylesheet\" type=\"text/css\" href=\"" . plugins_url("css/wrsvp.css",__FILE__) . "\">";
 	$wm = new MUMaster();
 	$wo = new MUDiv("wrsvp-overall");
 	$options = get_option('wrsvp_opts');
